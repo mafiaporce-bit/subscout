@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SubScout</title>
+<meta name="theme-color" content="#F4F1EA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23E5482D'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23fff' stroke-width='4'/%3E%3Cpath d='M32 32 43 21' stroke='%23fff' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="manifest" href='data:application/manifest+json,{"name":"SubScout","short_name":"SubScout","display":"standalone","background_color":"%23F4F1EA","theme_color":"%23E5482D","icons":[{"src":"data:image/svg+xml,%253Csvg xmlns=%2527http://www.w3.org/2000/svg%2527 viewBox=%25270 0 64 64%2527%253E%253Crect width=%252764%2527 height=%252764%2527 rx=%252714%2527 fill=%2527%2523E5482D%2527/%253E%253Ccircle cx=%252732%2527 cy=%252732%2527 r=%252715%2527 fill=%2527none%2527 stroke=%2527%2523fff%2527 stroke-width=%25274%2527/%253E%253C/svg%253E","sizes":"any","type":"image/svg+xml"}]}'>
+<style>
+:root{
+  --bg:#F4F1EA; --card:#FFFDF8; --ink:#1B1A17; --muted:#6F6A60; --line:#E2DCCF; --soft:#EBE6DB;
+  --accent:#E5482D; --accent-ink:#fff; --good:#1F8A5B; --warn:#B87A00; --bad:#C2321B;
+  --mono: ui-monospace, "Roboto Mono", "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --shadow: 0 1px 0 rgba(27,26,23,.04), 0 8px 24px -14px rgba(27,26,23,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#121110; --card:#1C1A18; --ink:#F2EEE6; --muted:#9A948A; --line:#2E2B27; --soft:#24211E;
+    --accent:#FF6B4A; --accent-ink:#1a0d08; --good:#4CC38A; --warn:#E0A63A; --bad:#FF7A61;
+    --shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.9); }
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.4; overflow-x:hidden}
+body{min-height:100vh; padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+button{font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; text-align:inherit}
+input{font:inherit; color:inherit}
+h1,h2,h3,p{margin:0}
+svg{display:block}
+
+.top{position:sticky; top:0; z-index:5; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  padding:calc(12px + env(safe-area-inset-top)) 18px 10px; display:flex; align-items:center; gap:10px}
+.logo{width:34px; height:34px; border-radius:10px; background:var(--accent); display:grid; place-items:center; flex:none}
+.logo svg{width:22px; height:22px; color:#fff}
+.brand{font-weight:800; letter-spacing:-.02em; font-size:20px}
+.brand small{display:block; font-weight:500; letter-spacing:0; font-size:11.5px; color:var(--muted); margin-top:-2px}
+.top .sp{flex:1}
+.pillbtn{min-height:40px; padding:0 14px; border-radius:999px; background:var(--soft); font-weight:650; font-size:14px; display:inline-flex; align-items:center; gap:7px}
+.pillbtn svg{width:17px; height:17px}
+
+main{padding:6px 16px 24px; max-width:560px; margin:0 auto}
+.page{display:none} .page.on{display:block}
+
+/* the receipt */
+.receipt{background:var(--card); padding:20px 20px 30px; border-radius:16px 16px 0 0; filter:drop-shadow(0 10px 14px rgba(27,26,23,.10));
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 9px) no-repeat, radial-gradient(circle at 9px 0, #000 8.5px, transparent 9px) bottom left/18px 9px repeat-x;
+  mask:linear-gradient(#000 0 0) top/100% calc(100% - 9px) no-repeat, radial-gradient(circle at 9px 0, #000 8.5px, transparent 9px) bottom left/18px 9px repeat-x}
+.r-label{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:650}
+.r-total{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:44px; font-weight:700; letter-spacing:-.04em; line-height:1.05; margin:6px 0 2px; display:flex; align-items:baseline; flex-wrap:wrap; gap:0 6px}
+.r-total .cur{font-size:17px; letter-spacing:0; color:var(--muted); font-weight:600}
+.r-total .dec{font-size:24px; color:var(--muted); letter-spacing:-.02em}
+.r-total .per{font-family:var(--sans); font-size:14px; letter-spacing:0; color:var(--muted); font-weight:600}
+.r-rule{border-top:2px dashed var(--line); margin:14px 0 10px}
+.r-row{display:flex; justify-content:space-between; gap:12px; font-size:14.5px; padding:4px 0}
+.r-row span{color:var(--muted)} .r-row b{font-weight:650; text-align:right; font-variant-numeric:tabular-nums}
+.r-note{font-size:12px; color:var(--muted); margin-top:8px}
+
+.scanbar{display:flex; align-items:center; gap:12px; margin:18px 2px 6px}
+.btn{min-height:48px; padding:0 20px; border-radius:14px; background:var(--accent); color:var(--accent-ink); font-weight:750; font-size:15.5px; display:inline-flex; align-items:center; justify-content:center; gap:9px}
+.btn svg{width:19px; height:19px; flex:none}
+.scanbar .btn{white-space:nowrap; flex:none}
+.btn.wide{width:100%} .btn.ghost{background:var(--soft); color:var(--ink)} .btn.line{background:none; border:1.5px solid var(--line); color:var(--ink)}
+.btn.danger{background:none; border:1.5px solid color-mix(in srgb, var(--bad) 50%, var(--line)); color:var(--bad)}
+.btn:disabled{opacity:.55}
+.scanbar .when{font-size:12.5px; color:var(--muted); line-height:1.3}
+
+.progress{background:var(--card); border-radius:14px; padding:14px 16px; margin:16px 0 4px; box-shadow:var(--shadow)}
+.progress p{font-size:14px; font-weight:600}
+.bar{height:6px; border-radius:6px; background:var(--soft); margin-top:10px; overflow:hidden}
+.bar i{display:block; height:100%; background:var(--accent); border-radius:6px; transition:width .35s ease}
+
+.banner{display:flex; align-items:center; gap:10px; background:color-mix(in srgb, var(--warn) 14%, var(--card)); border-radius:12px; padding:10px 12px 10px 14px; font-size:13.5px; margin:14px 0 0}
+.banner b{font-weight:700} .banner .sp{flex:1}
+.banner button{min-height:36px; padding:0 12px; border-radius:10px; background:var(--card); font-weight:650; font-size:13px}
+
+.sec{display:flex; align-items:baseline; gap:8px; margin:24px 4px 8px}
+.sec h2{font-size:13px; letter-spacing:.12em; text-transform:uppercase; font-weight:750}
+.sec span{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
+.sec.bad h2{color:var(--bad)}
+.hint{font-size:13px; color:var(--muted); margin:-2px 4px 8px}
+.list{background:var(--card); border-radius:16px; box-shadow:var(--shadow); overflow:hidden}
+.row{display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; min-height:64px; border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row:active{background:var(--soft)}
+.ava{width:40px; height:40px; border-radius:12px; flex:none; display:grid; place-items:center; font-weight:800; font-size:16px; color:#fff; background:hsl(var(--h) 42% 42%)}
+.r-main{flex:1; min-width:0}
+.r-name{display:block; font-weight:700; font-size:15.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.r-meta{display:block; font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.r-meta.bad{color:var(--bad); font-weight:600} .r-meta.warn{color:var(--warn); font-weight:600}
+.r-amt{text-align:right; flex:none}
+.r-amt b{display:block; font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14.5px; font-weight:700; letter-spacing:-.02em}
+.r-amt small{display:flex; justify-content:flex-end; align-items:center; gap:5px; font-size:11.5px; color:var(--muted); margin-top:2px}
+.r-amt small svg{width:13px; height:13px}
+details.ended{margin-top:18px}
+details.ended summary{list-style:none; display:flex; align-items:center; gap:8px; padding:10px 4px; font-size:13px; letter-spacing:.12em; text-transform:uppercase; font-weight:750; color:var(--muted); min-height:44px}
+details.ended summary::-webkit-details-marker{display:none}
+details.ended summary svg{width:16px; height:16px; transition:transform .2s}
+details.ended[open] summary svg{transform:rotate(90deg)}
+details.ended .row{opacity:.72}
+
+.empty{text-align:center; padding:26px 8px 6px}
+.empty .radar{width:120px; height:120px; margin:0 auto 14px; color:var(--accent)}
+.empty h2{font-size:21px; letter-spacing:-.02em; font-weight:800}
+.empty p{color:var(--muted); font-size:14.5px; margin:6px auto 0; max-width:320px}
+.steps{background:var(--card); border-radius:16px; box-shadow:var(--shadow); margin-top:20px; text-align:left; overflow:hidden}
+.step{display:flex; align-items:center; gap:12px; padding:13px 14px; border-top:1px solid var(--line); width:100%; min-height:60px}
+.step:first-child{border-top:0}
+.step .n{width:28px; height:28px; border-radius:50%; flex:none; display:grid; place-items:center; font-weight:800; font-size:13px; background:var(--soft)}
+.step.done .n{background:var(--good); color:#fff}
+.step .n svg{width:15px; height:15px}
+.step b{display:block; font-size:15px} .step small{display:block; color:var(--muted); font-size:12.5px}
+.step .go{margin-left:auto; color:var(--muted)} .step .go svg{width:18px; height:18px}
+
+/* cards on Sources / Settings */
+.card{background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:16px; margin-top:14px}
+.card h3{font-size:16.5px; font-weight:800; letter-spacing:-.01em; display:flex; align-items:center; gap:9px}
+.card h3 svg{width:20px; height:20px; color:var(--accent)}
+.card h3 .state{margin-left:auto; font-size:12px; font-weight:750; padding:3px 9px; border-radius:999px; background:var(--soft); color:var(--muted); letter-spacing:.02em}
+.card h3 .state.on{background:color-mix(in srgb, var(--good) 16%, transparent); color:var(--good)}
+.card p{font-size:14px; color:var(--muted); margin-top:8px}
+.card p b{color:var(--ink)}
+.card ol{margin:10px 0 0; padding-left:20px; font-size:14px; color:var(--muted)}
+.card ol li{margin:5px 0} .card ol b{color:var(--ink)}
+.card .btn{margin-top:14px}
+.acct{display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid var(--line); margin-top:12px; font-size:14.5px; font-weight:650}
+.acct + .acct{margin-top:0}
+.acct span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.acct button{min-height:40px; padding:0 12px; border-radius:10px; color:var(--bad); font-weight:650; font-size:13.5px}
+label.f{display:block; margin-top:12px; font-size:12.5px; font-weight:650; color:var(--muted)}
+label.f input{display:block; width:100%; margin-top:5px; min-height:48px; padding:0 14px; border-radius:12px; border:1.5px solid var(--line); background:var(--bg); font-size:16px; font-weight:500; color:var(--ink); outline:none}
+label.f input:focus{border-color:var(--accent)}
+label.f input.mono{font-family:var(--mono); letter-spacing:.04em}
+.err{color:var(--bad)!important; font-weight:600}
+details.more{margin-top:12px}
+details.more summary{font-size:14px; font-weight:650; color:var(--accent); min-height:40px; display:flex; align-items:center; list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+.seg{display:flex; gap:6px; margin-top:12px; background:var(--soft); padding:4px; border-radius:12px}
+.seg button{flex:1; min-height:42px; border-radius:9px; text-align:center; font-weight:650; font-size:14px; color:var(--muted)}
+.seg button.on{background:var(--card); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.ptitle{font-size:26px; font-weight:800; letter-spacing:-.03em; margin:8px 4px 0}
+.psub{color:var(--muted); font-size:14.5px; margin:2px 4px 0}
+footer{font-size:11.5px; color:var(--muted); text-align:center; padding:26px 12px 6px; line-height:1.5}
+
+/* tab bar */
+.tabs{position:fixed; left:0; right:0; bottom:0; z-index:6; background:color-mix(in srgb, var(--card) 94%, transparent); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border-top:1px solid var(--line); display:flex; padding:6px 10px calc(6px + env(safe-area-inset-bottom))}
+.tabs button{flex:1; min-height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:11.5px; font-weight:650; color:var(--muted); border-radius:12px}
+.tabs button svg{width:23px; height:23px}
+.tabs button.on{color:var(--accent)}
+
+/* detail sheet */
+.scrim{position:fixed; inset:0; z-index:8; background:rgba(10,8,6,.5); opacity:0; pointer-events:none; transition:opacity .2s}
+.scrim.on{opacity:1; pointer-events:auto}
+.sheet{position:fixed; left:0; right:0; bottom:0; z-index:9; max-height:88vh; overflow:auto; background:var(--bg); border-radius:22px 22px 0 0; padding:10px 18px calc(22px + env(safe-area-inset-bottom));
+  transform:translateY(105%); transition:transform .26s cubic-bezier(.2,.8,.2,1); max-width:560px; margin:0 auto}
+.sheet.on{transform:none}
+.grab{width:42px; height:5px; border-radius:5px; background:var(--line); margin:0 auto 12px}
+.s-head{display:flex; align-items:center; gap:12px}
+.s-head .ava{width:50px; height:50px; border-radius:15px; font-size:20px}
+.s-head h2{font-size:21px; font-weight:800; letter-spacing:-.02em; line-height:1.15}
+.s-head p{font-size:13px; color:var(--muted)}
+.s-head .x{margin-left:auto; width:44px; height:44px; border-radius:50%; background:var(--soft); display:grid; place-items:center; flex:none}
+.s-head .x svg{width:18px; height:18px}
+.chip{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; padding:5px 10px; border-radius:999px; background:var(--soft); margin:12px 6px 0 0}
+.chip svg{width:14px; height:14px}
+.chip.good{background:color-mix(in srgb, var(--good) 16%, transparent); color:var(--good)}
+.chip.bad{background:color-mix(in srgb, var(--bad) 15%, transparent); color:var(--bad)}
+.chip.warn{background:color-mix(in srgb, var(--warn) 18%, transparent); color:var(--warn)}
+.grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px}
+.stat{background:var(--card); border-radius:14px; padding:12px 14px}
+.stat small{display:block; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:650}
+.stat b{display:block; font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:17px; letter-spacing:-.03em; margin-top:3px}
+.stat b.t{font-family:var(--sans); letter-spacing:-.01em}
+.stat em{display:block; font-style:normal; font-size:12px; color:var(--muted); margin-top:1px}
+.sheet h4{font-size:12.5px; letter-spacing:.12em; text-transform:uppercase; font-weight:750; margin:20px 2px 8px}
+.hist{background:var(--card); border-radius:14px; overflow:hidden}
+.hist div{display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--line); font-size:14px}
+.hist div:first-child{border-top:0}
+.hist span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.hist time{color:var(--muted); font-size:12.5px; flex:none; width:78px}
+.hist b{font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:650; font-size:13.5px; flex:none}
+.hist svg{width:14px; height:14px; color:var(--muted); flex:none}
+.sheet .btn{margin-top:18px}
+
+.toast{position:fixed; left:50%; bottom:calc(98px + env(safe-area-inset-bottom)); transform:translate(-50%, 20px); z-index:12; background:var(--ink); color:var(--bg); padding:11px 16px; border-radius:12px; font-size:14px; font-weight:600; max-width:calc(100vw - 40px); opacity:0; pointer-events:none; transition:all .22s; text-align:center}
+.toast.on{opacity:1; transform:translate(-50%, 0)}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 12l5.2-5.2"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg></div>
+  <div class="brand">SubScout<small>Every subscription, one list</small></div>
+  <div class="sp"></div>
+  <button class="pillbtn" data-act="scan" id="topScan" aria-label="Scan now"></button>
+</header>
+<main>
+  <section class="page on" id="p-home"></section>
+  <section class="page" id="p-sources"></section>
+  <section class="page" id="p-settings"></section>
+</main>
+<nav class="tabs" id="tabs"></nav>
+<div class="scrim" id="scrim" data-act="close"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script id="engine">
+/* SubScout detection engine: turns emails and bank alerts into a list of subscriptions.
+   Pure functions, no DOM, so it can be tested on its own. */
+const Engine = (() => {
+  'use strict';
+  const DAY = 86400000;
+
+  /* ---------- money ---------- */
+  // Rates to AED. USD, SAR, QAR, BHD and OMR are pegged; the rest are rough and shown with "≈".
+  const RATE = { AED: 1, USD: 3.6725, SAR: 0.979, QAR: 1.009, BHD: 9.74, OMR: 9.54, KWD: 11.95, EUR: 4.0, GBP: 4.7, PHP: 0.064, INR: 0.043, CAD: 2.65, AUD: 2.4, SGD: 2.8, JPY: 0.024, CHF: 4.3, TRY: 0.09, EGP: 0.075 };
+  const CODES = Object.keys(RATE).join('|');
+  const NUM = '(\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)';
+  const RE_MONEY = new RegExp('(?:(?:\\b(' + CODES + ')|(US\\$|A\\$|C\\$|S\\$|\\$|€|£|₱|₹|د\\.إ|\\bDhs?\\.?))\\s?' + NUM + '|' + NUM + '\\s?(?:(' + CODES + ')\\b|(€|£)))', 'gi');
+  const SYM = { 'US$': 'USD', 'A$': 'AUD', 'C$': 'CAD', 'S$': 'SGD', '$': 'USD', '€': 'EUR', '£': 'GBP', '₱': 'PHP', '₹': 'INR', 'د.إ': 'AED' };
+
+  function parseNum(s) {
+    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) return parseFloat(s.replace(/,/g, ''));
+    if (/^\d+,\d{1,2}$/.test(s)) return parseFloat(s.replace(',', '.'));
+    return parseFloat(s);
+  }
+  function findMoney(text) {
+    const out = []; if (!text) return out;
+    RE_MONEY.lastIndex = 0; let m;
+    while ((m = RE_MONEY.exec(text))) {
+      const code = m[1] || m[5]; const sym = m[2] || m[6];
+      let cur = code ? code.toUpperCase() : (SYM[sym] || SYM[(sym || '').toUpperCase()] || (/^dh/i.test(sym || '') ? 'AED' : null));
+      const amount = parseNum(m[3] || m[4]);
+      if (!cur || !isFinite(amount) || amount >= 100000) continue;
+      out.push({ amount, cur, idx: m.index, end: m.index + m[0].length });
+    }
+    return out;
+  }
+  function toAED(amount, cur) { return amount * (RATE[cur] || 1); }
+
+  /** Best guess at "what was charged" in a receipt. */
+  function pickAmount(subject, body) {
+    let best = null;
+    const consider = (text, bonus) => {
+      for (const f of findMoney(text)) {
+        if (f.amount <= 0) continue;
+        const before = text.slice(Math.max(0, f.idx - 45), f.idx).toLowerCase();
+        let score = bonus - f.idx / 20000;
+        if (/total|amount|charged|you paid|payment of|billed|price|renew/.test(before)) score += 4;
+        if (/\btotal\b/.test(before) && !/sub-?total/.test(before)) score += 2;
+        if (/(sub-?total|tax|vat|discount|saved?|saving|balance|limit|credit|was|instead of|off|shipping|fee)\W{0,6}$/.test(before.slice(-26))) score -= 5;
+        if (!best || score > best.score) best = { amount: f.amount, cur: f.cur, score, after: text.slice(f.end, f.end + 22) };
+      }
+    };
+    consider(subject || '', 3);
+    consider((body || '').slice(0, 6000), 0);
+    return best;
+  }
+
+  /* ---------- dates ---------- */
+  const MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  const MRE = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?';
+  const RE_D1 = new RegExp('\\b(\\d{1,2})(?:st|nd|rd|th)?[ -]' + MRE + '(?:,?[ -](\\d{4}))?', 'i');
+  const RE_D2 = new RegExp('\\b' + MRE + ' (\\d{1,2})(?:st|nd|rd|th)?(?:,? (\\d{4}))?', 'i');
+  const RE_D3 = /\b(\d{4})-(\d{2})-(\d{2})\b/;
+  const RE_D4 = /\b(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})\b/;
+  function mk(y, mo, d, base) {
+    if (y == null) { // no year written: the next time that day comes round
+      const b = new Date(base); y = b.getFullYear();
+      if (Date.UTC(y, mo, d) < base - 3 * DAY) y++;
+    }
+    const t = new Date(y, mo, d, 12).getTime();
+    return isFinite(t) && d >= 1 && d <= 31 ? t : null;
+  }
+  function findDate(str, base) {
+    const hits = [];
+    let m;
+    if ((m = RE_D1.exec(str))) hits.push([m.index, mk(m[3] ? +m[3] : null, MON[m[2].toLowerCase()], +m[1], base)]);
+    if ((m = RE_D2.exec(str))) hits.push([m.index, mk(m[3] ? +m[3] : null, MON[m[1].toLowerCase()], +m[2], base)]);
+    if ((m = RE_D3.exec(str))) hits.push([m.index, mk(+m[1], +m[2] - 1, +m[3], base)]);
+    if ((m = RE_D4.exec(str))) {
+      const a = +m[1], b = +m[2]; let y = +m[3]; if (y < 100) y += 2000;
+      if (a > 12 && b <= 12) hits.push([m.index, mk(y, b - 1, a, base)]);
+      else if (b > 12 && a <= 12) hits.push([m.index, mk(y, a - 1, b, base)]);
+    }
+    hits.sort((x, y) => x[0] - y[0]);
+    for (const h of hits) if (h[1]) return h[1];
+    return null;
+  }
+  const RE_NEXT = /(renews?|renewal|next (?:billing|payment|charge|invoice)|will be charged|be charged|trial (?:ends|expires|will end|is ending)|ends on|expires on|valid until|billing date)/gi;
+  /** A renewal / trial-end date written in the email, if any. */
+  function nextHint(text, base) {
+    RE_NEXT.lastIndex = 0; let m;
+    while ((m = RE_NEXT.exec(text))) {
+      const d = findDate(text.slice(m.index, m.index + m[0].length + 70), base);
+      if (d && d > base - 2 * DAY && d < base + 400 * DAY) return d;
+    }
+    return null;
+  }
+
+  /* ---------- billing period ---------- */
+  const PER_DAYS = { week: 7, month: 30.44, quarter: 91.31, half: 182.62, year: 365.25 };
+  const PER_MONTHLY = { week: 4.345, month: 1, quarter: 1 / 3, half: 1 / 6, year: 1 / 12 };
+  function periodHint(text, money) {
+    if (money && money.after) {
+      const a = money.after.match(/^\s*(?:\/|per|a|each|every)\s*(month|mo\b|year|yr|annum|week|quarter|3 months|6 months|12 months)/i);
+      if (a) { const w = a[1].toLowerCase(); return /^mo/.test(w) ? 'month' : /year|yr|annum|12/.test(w) ? 'year' : /week/.test(w) ? 'week' : /6/.test(w) ? 'half' : 'quarter'; }
+    }
+    const t = text.toLowerCase();
+    const has = {
+      year: /\b(yearly|annual|annually|per year|a year|every year|\/ ?(yr|year)|12[- ]months?|1[- ]year)\b/.test(t),
+      month: /\b(monthly|per month|a month|every month|each month|\/ ?(mo|month)|1[- ]month)\b/.test(t),
+      week: /\b(weekly|per week|every week|\/ ?week)\b/.test(t),
+      quarter: /\b(quarterly|every 3 months|3[- ]months?)\b/.test(t)
+    };
+    const on = Object.keys(has).filter(k => has[k]);
+    return on.length === 1 ? on[0] : null;
+  }
+  function inferPeriod(dates) {
+    if (dates.length < 2) return null;
+    const gaps = []; for (let i = 1; i < dates.length; i++) gaps.push((dates[i] - dates[i - 1]) / DAY);
+    gaps.sort((a, b) => a - b); const g = gaps[Math.floor((gaps.length - 1) / 2)];
+    if (g >= 5 && g <= 9) return 'week';
+    if (g >= 26 && g <= 35) return 'month';
+    if (g >= 84 && g <= 98) return 'quarter';
+    if (g >= 170 && g <= 196) return 'half';
+    if (g >= 350 && g <= 380) return 'year';
+    return null;
+  }
+  function addPeriod(t, per) {
+    const d = new Date(t);
+    if (per === 'week') return t + 7 * DAY;
+    const months = { month: 1, quarter: 3, half: 6, year: 12 }[per] || 1;
+    const day = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + months);
+    d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    return d.getTime();
+  }
+
+  /* ---------- known services ---------- */
+  const S = (k, n, c, d, w, o) => Object.assign({ k, n, c, d: d ? d.split(' ') : [], w: w ? new RegExp(w, 'i') : null }, o || {});
+  // Specific names come before general ones, because the first match wins.
+  const SERVICES = [
+    S('youtube', 'YouTube Premium', 'Streaming', 'youtube.com', 'youtube ?(premium|music)|yt ?premium|google ?\\*? ?youtube'),
+    S('googleone', 'Google One', 'Cloud', '', 'google ?\\*? ?one\\b|google storage'),
+    S('gworkspace', 'Google Workspace', 'Work', '', 'google ?\\*? ?(workspace|g ?suite)'),
+    S('gemini', 'Google AI', 'AI', '', 'gemini (advanced|pro)|google ?\\*? ?ai (pro|premium|ultra)'),
+    S('netflix', 'Netflix', 'Streaming', 'netflix.com', 'netflix'),
+    S('spotify', 'Spotify', 'Music', 'spotify.com', 'spotify'),
+    S('disney', 'Disney+', 'Streaming', 'disneyplus.com', 'disney ?(\\+|plus)|disneyplus'),
+    S('shahid', 'Shahid', 'Streaming', 'shahid.net mbc.net', 'shahid'),
+    S('osn', 'OSN+', 'Streaming', 'osnplus.com osn.com', 'osn ?(\\+|plus)|\\bosn\\b'),
+    S('starzplay', 'STARZPLAY', 'Streaming', 'starzplay.com', 'starz ?play'),
+    S('tod', 'TOD', 'Streaming', 'tod.tv', 'tod\\.tv|\\btod tv\\b'),
+    S('bein', 'beIN', 'Streaming', 'bein.com', '\\bbein\\b'),
+    S('appletv', 'Apple TV+', 'Streaming', '', 'apple ?tv'),
+    S('applemusic', 'Apple Music', 'Music', '', 'apple ?music'),
+    S('icloud', 'iCloud+', 'Cloud', '', 'icloud'),
+    S('prime', 'Amazon Prime', 'Shopping', 'primevideo.com', 'amazon ?prime|amzn ?prime|prime ?video|prime membership'),
+    S('audible', 'Audible', 'Reading', 'audible.com audible.co.uk', 'audible'),
+    S('kindle', 'Kindle Unlimited', 'Reading', '', 'kindle unlimited'),
+    S('max', 'Max', 'Streaming', 'max.com hbomax.com', 'hbo ?max|\\bmax\\.com'),
+    S('crunchyroll', 'Crunchyroll', 'Streaming', 'crunchyroll.com', 'crunchyroll'),
+    S('nba', 'NBA League Pass', 'Streaming', 'nba.com', 'league pass|nba (id|tv)'),
+    S('dazn', 'DAZN', 'Streaming', 'dazn.com', '\\bdazn\\b'),
+    S('anghami', 'Anghami', 'Music', 'anghami.com', 'anghami'),
+    S('deezer', 'Deezer', 'Music', 'deezer.com', 'deezer'),
+    S('claude', 'Claude', 'AI', 'anthropic.com claude.ai claude.com', 'anthropic|\\bclaude\\b'),
+    S('chatgpt', 'ChatGPT', 'AI', 'openai.com chatgpt.com', 'openai|chatgpt'),
+    S('elevenlabs', 'ElevenLabs', 'AI', 'elevenlabs.io', 'eleven ?labs'),
+    S('deepgram', 'Deepgram', 'AI', 'deepgram.com', 'deepgram'),
+    S('openrouter', 'OpenRouter', 'AI', 'openrouter.ai', 'openrouter'),
+    S('higgsfield', 'Higgsfield', 'AI', 'higgsfield.ai', 'higgsfield'),
+    S('midjourney', 'Midjourney', 'AI', 'midjourney.com', 'midjourney'),
+    S('perplexity', 'Perplexity', 'AI', 'perplexity.ai', 'perplexity'),
+    S('cursor', 'Cursor', 'AI', 'cursor.com cursor.sh', 'cursor ?(ai|pro)|anysphere'),
+    S('grok', 'Grok', 'AI', 'x.ai', 'supergrok|\\bgrok\\b|\\bx\\.ai\\b'),
+    S('copilot', 'GitHub Copilot', 'AI', '', 'copilot'),
+    S('runway', 'Runway', 'AI', 'runwayml.com', 'runway ?ml|runwayml'),
+    S('suno', 'Suno', 'AI', 'suno.com suno.ai', '\\bsuno\\b'),
+    S('heygen', 'HeyGen', 'AI', 'heygen.com', 'heygen'),
+    S('github', 'GitHub', 'Work', 'github.com', 'github'),
+    S('netlify', 'Netlify', 'Work', 'netlify.com', 'netlify'),
+    S('vercel', 'Vercel', 'Work', 'vercel.com', 'vercel'),
+    S('cloudflare', 'Cloudflare', 'Work', 'cloudflare.com', 'cloudflare'),
+    S('namecheap', 'Namecheap', 'Work', 'namecheap.com', 'namecheap'),
+    S('godaddy', 'GoDaddy', 'Work', 'godaddy.com', 'godaddy'),
+    S('hostinger', 'Hostinger', 'Work', 'hostinger.com', 'hostinger'),
+    S('shopify', 'Shopify', 'Work', 'shopify.com', 'shopify'),
+    S('canva', 'Canva', 'Work', 'canva.com', 'canva'),
+    S('adobe', 'Adobe', 'Work', 'adobe.com', 'adobe'),
+    S('figma', 'Figma', 'Work', 'figma.com', 'figma'),
+    S('notion', 'Notion', 'Work', 'notion.so makenotion.com notion.com', '\\bnotion\\b'),
+    S('zoom', 'Zoom', 'Work', 'zoom.us zoom.com', 'zoom\\.(us|com)|zoom video'),
+    S('slack', 'Slack', 'Work', 'slack.com', '\\bslack\\b'),
+    S('dropbox', 'Dropbox', 'Cloud', 'dropbox.com dropboxmail.com', 'dropbox'),
+    S('m365', 'Microsoft 365', 'Work', '', 'microsoft ?\\*? ?365|office ?365|msft ?\\*|microsoft ?\\*'),
+    S('linkedin', 'LinkedIn Premium', 'Work', 'linkedin.com', 'linkedin'),
+    S('grammarly', 'Grammarly', 'Work', 'grammarly.com', 'grammarly'),
+    S('capcut', 'CapCut', 'Work', 'capcut.com', 'capcut'),
+    S('tailscale', 'Tailscale', 'Work', 'tailscale.com', 'tailscale'),
+    S('expressvpn', 'ExpressVPN', 'Security', 'expressvpn.com', 'express ?vpn'),
+    S('nordvpn', 'NordVPN', 'Security', 'nordvpn.com nordaccount.com', 'nord ?vpn|nord ?\\*'),
+    S('surfshark', 'Surfshark', 'Security', 'surfshark.com', 'surfshark'),
+    S('proton', 'Proton', 'Security', 'proton.me protonmail.com', '\\bproton\\b'),
+    S('onepassword', '1Password', 'Security', '1password.com', '1password'),
+    S('xpremium', 'X Premium', 'Social', 'x.com twitter.com', 'x premium|twitter blue|\\bx corp'),
+    S('telegram', 'Telegram Premium', 'Social', 'telegram.org', 'telegram'),
+    S('snapchat', 'Snapchat+', 'Social', 'snapchat.com', 'snapchat'),
+    S('discord', 'Discord Nitro', 'Social', 'discord.com', 'discord'),
+    S('tinder', 'Tinder', 'Social', 'gotinder.com tinder.com', 'tinder'),
+    S('bumble', 'Bumble', 'Social', 'bumble.com', 'bumble'),
+    S('playstation', 'PlayStation Plus', 'Games', 'playstation.com sony.com', 'playstation|ps ?plus|sony interactive'),
+    S('xbox', 'Xbox Game Pass', 'Games', 'xbox.com', 'xbox|game ?pass'),
+    S('nintendo', 'Nintendo Switch Online', 'Games', 'nintendo.com nintendo.net', 'nintendo'),
+    S('duolingo', 'Duolingo', 'Learning', 'duolingo.com', 'duolingo'),
+    S('coursera', 'Coursera', 'Learning', 'coursera.org', 'coursera'),
+    S('skillshare', 'Skillshare', 'Learning', 'skillshare.com', 'skillshare'),
+    S('strava', 'Strava', 'Fitness', 'strava.com', 'strava'),
+    S('headspace', 'Headspace', 'Fitness', 'headspace.com', 'headspace'),
+    S('medium', 'Medium', 'Reading', 'medium.com', 'medium\\.com|medium membership'),
+    S('du', 'du', 'Telecom', 'du.ae', '^du\\b|\\bdu (bill|postpaid|home|mobile|telecom|payment)|emirates integrated|\\beitc\\b'),
+    S('etisalat', 'e& (Etisalat)', 'Telecom', 'etisalat.ae eand.com', 'etisalat|\\be& '),
+    S('careem', 'Careem Plus', 'Shopping', '', 'careem ?(plus|\\+)'),
+    S('talabat', 'talabat pro', 'Shopping', '', 'talabat ?pro'),
+    S('noon', 'noon One', 'Shopping', '', 'noon ?one'),
+    S('deliveroo', 'Deliveroo Plus', 'Shopping', '', 'deliveroo ?plus'),
+    S('gym', 'Gym membership', 'Fitness', 'fitnessfirstme.com gymnation.com', 'fitness first|gymnation|gold\'?s gym'),
+    // Catch-alls for store billing: several different subscriptions can hide behind these, so they are split by amount.
+    S('applebill', 'Apple', 'Apps', '', 'apple\\.com\\/bill|itunes\\.com|apple services|app store', { multi: true }),
+    S('googleplay', 'Google Play', 'Apps', '', 'google ?\\*|google play|g\\.co\\/helppay', { multi: true })
+  ];
+  function byDomain(domain) {
+    for (const s of SERVICES) for (const d of s.d) if (domain === d || domain.endsWith('.' + d)) return s;
+    return null;
+  }
+  function byText(t) { if (!t) return null; for (const s of SERVICES) if (s.w && s.w.test(t)) return s; return null; }
+  // Big senders that mail about many things: only trust them when a product name shows up.
+  const RE_BIG = /(^|\.)(google\.com|apple\.com|amazon\.[a-z.]+|microsoft\.com|samsung\.com|careem\.com|talabat\.com|noon\.com|deliveroo\.[a-z.]+|facebookmail\.com|meta\.com)$/;
+
+  /* ---------- who sent it ---------- */
+  function parseFrom(f) {
+    f = String(f || ''); const m = f.match(/^(.*?)<([^>]+)>\s*$/);
+    const disp = (m ? m[1] : '').replace(/["']/g, '').trim();
+    const addr = (m ? m[2] : f).trim().toLowerCase();
+    return { disp, addr, domain: addr.includes('@') ? addr.split('@').pop() : '' };
+  }
+  const SLD = new Set(['co.uk', 'com.au', 'co.ae', 'com.ph', 'co.in', 'com.sg', 'co.jp', 'com.br', 'co.nz', 'co.za', 'com.sa', 'com.tr', 'com.eg', 'com.mx']);
+  function rootLabel(domain) {
+    const p = domain.split('.'); if (p.length < 2) return domain;
+    return SLD.has(p.slice(-2).join('.')) && p.length >= 3 ? p[p.length - 3] : p[p.length - 2];
+  }
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 24);
+  function cleanName(s) {
+    s = String(s || '').replace(/\b(billing|receipts?|payments?|invoices?|team|support|no-?reply|notifications?|accounts?|info|hello|customer (service|care)|via stripe|inc\.?|llc|ltd\.?|limited|gmbh|pbc|corp\.?)\b/gi, ' ');
+    return s.replace(/[|,:;()\[\]<>]+/g, ' ').replace(/\s+/g, ' ').replace(/^[\s\-–.]+|[\s\-–.]+$/g, '').slice(0, 40);
+  }
+  const tidyApp = s => cleanName(String(s || '').split(/[:\-–|]/)[0]) || cleanName(s);
+
+  /** "Plan name (App name)   AED 23.99/month" in a Google Play receipt. */
+  function gpItem(body) {
+    const re = new RegExp('([^\\n\\t|()]{2,70})\\(([^()\\n]{2,70})\\)[\\s|]*(?:' + RE_MONEY.source + ')(\\s*\\/\\s*\\w+)?', 'i');
+    const m = re.exec(body); if (!m) return null;
+    const money = findMoney(m[0]).pop();
+    return { plan: m[1].trim(), app: m[2].trim(), amount: money ? money.amount : null, cur: money ? money.cur : null, after: m[0].slice(-12) };
+  }
+  /** App name in an Apple receipt: the line or two above "Renews ...", or an "App:" label. */
+  function appleApp(body) {
+    let m = /\bApp(?: Name)?\s*[:\t]\s*([^\n\t]{2,60})/.exec(body); if (m) return m[1].trim();
+    const lines = body.split('\n').map(x => x.trim()).filter(Boolean);
+    const i = lines.findIndex(l => /^renews\b/i.test(l));
+    if (i > 0) { const c = lines[i - 2] && !/app store|apple (services|id|account)|receipt|billed to|order id|document/i.test(lines[i - 2]) && lines[i - 2].length < 60 ? lines[i - 2] : lines[i - 1]; return c; }
+    return null;
+  }
+  const svc = (s, via) => ({ key: s.k, name: s.n, cat: s.c, known: true, multi: !!s.multi, via: via || '' });
+
+  function identify(from, subject, body) {
+    const { disp, addr, domain } = parseFrom(from);
+    body = body || '';
+    // Google Play
+    if (/googleplay-noreply@google\.com/.test(addr) || /google play/i.test(disp) || /google play order receipt/i.test(subject)) {
+      const it = gpItem(body); const s = byText(it && it.app) || byText(it && it.plan);
+      if (s && !s.multi) return Object.assign(svc(s, 'Google Play'), { item: it, platform: true });
+      if (it) return { key: 'gp:' + slug(it.app), name: tidyApp(it.app), cat: 'Apps', known: false, via: 'Google Play', platform: true, item: it };
+      return { key: 'googleplay', name: 'Google Play', cat: 'Apps', known: false, via: 'Google Play', platform: true, multi: true };
+    }
+    // Apple
+    if (/(^|\.)apple\.com$/.test(domain) && /receipt|subscription|renew|trial|invoice/i.test(subject + ' ' + body.slice(0, 300))) {
+      const app = appleApp(body); const s = byText(app) || byText(subject);
+      if (s && !s.multi) return Object.assign(svc(s, 'Apple'), { platform: true });
+      if (app) return { key: 'ap:' + slug(app), name: tidyApp(app), cat: 'Apps', known: false, via: 'Apple', platform: true };
+      return { key: 'applebill', name: 'Apple', cat: 'Apps', known: false, via: 'Apple', platform: true, multi: true };
+    }
+    // PayPal
+    if (/(^|\.)paypal\.[a-z.]+$/.test(domain)) {
+      const m = /payment to ([^\n.]{2,60}?)(?=\s+(?:for|on|of)\b|\s*$|[.\n])/i.exec(subject) || /payment to ([^\n.]{2,60}?)(?=\s+(?:for|on|of)\b|[.\n])/i.exec(body.slice(0, 1500));
+      const who = m ? m[1].trim() : ''; const s = byText(who);
+      if (s && !s.multi) return Object.assign(svc(s, 'PayPal'), { platform: true });
+      if (who) return { key: 'pp:' + slug(who), name: cleanName(who), cat: 'Other', known: false, via: 'PayPal', platform: true };
+      return { key: 'paypal', name: 'PayPal', cat: 'Other', known: false, via: 'PayPal', platform: true, multi: true };
+    }
+    // Stripe, Paddle and friends send receipts in the seller's name
+    if (/(^|\.)(stripe\.com|paddle\.com|lemonsqueezy\.com|fastspring\.com|gumroad\.com)$/.test(domain)) {
+      const m = /receipt from ([^#\n]{2,50}?)(?=\s*#|\s*$)/i.exec(subject);
+      const who = cleanName(m ? m[1] : disp); const s = byText(who);
+      if (s && !s.multi) return svc(s);
+      if (who) return { key: 'd:' + slug(who), name: who, cat: 'Other', known: false };
+    }
+    if (RE_BIG.test(domain)) {
+      const s = byText(subject) || byText(disp) || byText(body.slice(0, 600));
+      if (s) return svc(s);
+      const n = cleanName(disp) || cap(rootLabel(domain));
+      return { key: 'd:' + rootLabel(domain) + ':' + slug(n), name: n, cat: 'Other', known: false };
+    }
+    const s = byDomain(domain) || byText(disp);
+    if (s) return svc(s);
+    return { key: 'd:' + rootLabel(domain), name: cleanName(disp) || cap(rootLabel(domain)), cat: 'Other', known: false };
+  }
+
+  /* ---------- what kind of email ---------- */
+  const RE_FAILED = /(payment|charge|card|billing|renewal|transaction)[^.\n]{0,40}(failed|declined|unsuccessful|couldn'?t be (processed|completed)|could not be (processed|completed)|was not successful)|(unable|failed|couldn'?t|could not) to (process|charge|renew|collect)|update your (payment|billing) (method|details|information)|problem with your (payment|billing)|payment (issue|problem)/i;
+  const RE_CANCEL = /(subscription|membership|plan|trial|auto-?renew\w*|premium)[^.\n]{0,45}(cancel?led|has ended|has expired|was ended|turned off|been stopped)|cancel?lation (confirm|of your|notice)|(you'?ve|you have) (cancel?led|unsubscribed)|sorry to see you go/i;
+  const RE_REFUND = /\brefund(ed)?\b/i;
+  const RE_UPCOMING = /(will|about to|set to|going to|due to|scheduled to) (auto-?)?renew|renews (on|soon|in|tomorrow)|upcoming (renewal|payment|charge)|renewal (reminder|notice)|before (it|your [^.\n]{0,25}) renews|price (change|increase|update)|will be (charged|billed)|next (payment|charge) (is|will)/i;
+  const RE_TRIAL = /trial (has |have )?(started|begun|begins)|trial (is ending|ends|will end|is about to end|expires|ending)|(started?|welcome to) your (free )?trial|your free trial/i;
+  const RE_CHARGE = /receipt|invoice|payment (received|confirmation|confirmed|successful|processed|complete)|(thanks|thank you) for your (payment|purchase|order|subscription)|you paid|we'?ve charged|we charged|has been (renewed|charged)|was renewed|successfully (renewed|subscribed|charged)|subscription (is )?confirmed|order (receipt|confirmation)|purchase (receipt|confirmation)|payment to|automatic payment|billing statement|you'?re subscribed|welcome to [^.\n]{0,30}(premium|pro|plus)/i;
+  const RE_STRONG = /subscri|renew|membership|recurring|auto-?pay|automatic payment|billing (period|cycle|date)|next (billing|payment|charge)|per month|\/ ?mo(nth)?\b|\/ ?(yr|year)\b|\bmonthly\b|\bannual(ly)?\b|\byearly\b|free trial|your plan/i;
+  const RE_PROMO = /\d+ ?% off|\bsale\b|\bdeals?\b|special offer|limited[- ]time|last chance|save (up to|\d)|get \d+ months?|try [^.\n]{0,30} free|upgrade (now|today|to)|black friday|cyber monday|white friday|gift card|win\b/i;
+
+  function classify(t) {
+    if (!t) return null;
+    if (RE_FAILED.test(t)) return 'failed';
+    if (RE_CANCEL.test(t)) return 'cancel';
+    if (RE_REFUND.test(t)) return 'refund';
+    if (RE_UPCOMING.test(t)) return 'upcoming';
+    if (RE_TRIAL.test(t)) return 'trial';
+    if (RE_CHARGE.test(t)) return 'charge';
+    return null;
+  }
+  const norm = s => String(s || '').replace(/\r/g, '').replace(/[  ]+/g, ' ').trim();
+
+  /** First pass on subject lines: which emails are worth opening? Returns their ids, most useful first. */
+  function triage(headers) {
+    const want = [];
+    for (const h of headers) {
+      const s = norm(h.s); const f = parseFrom(h.f);
+      if (RE_PROMO.test(s) && !RE_CHARGE.test(s)) continue;
+      const sure = !!byDomain(f.domain) || /googleplay-noreply|paypal\.|stripe\.com|paddle\.com|apple\.com/.test(f.addr);
+      const strong = RE_STRONG.test(s);
+      if (sure || strong || classify(s)) want.push({ u: h.u, d: h.d, p: (sure ? 2 : 0) + (strong ? 1 : 0) });
+    }
+    want.sort((a, b) => (b.p - a.p) || (b.d - a.d));
+    return want.map(w => w.u);
+  }
+
+  /** One email -> one event (or null when it isn't about a subscription). */
+  function mailEvent(m, acct) {
+    const subject = norm(m.s); const body = norm(m.text);
+    let kind = classify(subject) || classify(body.slice(0, 700));
+    if (!kind) return null;
+    if (RE_PROMO.test(subject) && kind !== 'charge' && kind !== 'cancel' && kind !== 'failed') return null;
+    const id = identify(m.f, subject, body);
+    const txt = subject + '\n' + body.slice(0, 4000);
+    const strong = RE_STRONG.test(txt);
+    let money = pickAmount(subject, body);
+    if (id.item && id.item.amount) money = { amount: id.item.amount, cur: id.item.cur, after: id.item.after };
+    if (kind === 'charge' && !money && !id.known) return null;
+    if (kind === 'refund') return null;
+    return {
+      id: 'm:' + (acct || '') + ':' + m.u, src: 'mail', kind, date: m.d, key: id.key, name: id.name, cat: id.cat,
+      known: !!id.known, via: id.via || '', multi: !!id.multi, weak: !id.known && !strong,
+      amount: money ? money.amount : null, cur: money ? money.cur : null,
+      per: periodHint(txt, money), next: nextHint(txt, m.d), sub: subject.slice(0, 110)
+    };
+  }
+
+  /* ---------- bank alerts ---------- */
+  const RE_AL_SKIP = /\b(otp|one[- ]time (password|pin|passcode)|verification code|do not share|never share|activation code)\b/i;
+  const RE_AL_IN = /\b(credited|deposit(ed)?|salary|refund(ed)?|reversal|reversed|cash ?back|received|incoming)\b/i;
+  const RE_AL_OUT = /\b(purchase[ds]?|spent|debited|charged|payment|paid|trx|txn|transaction|used|using|deducted|pos)\b/i;
+  const RE_AL_NOT = /\b(atm|cash withdrawal|withdrawn|withdrawal|transfer(red)?|card payment received|payment received)\b/i;
+  const WALLETS = /walletnfcrel|samsung\.android\.spay|samsungpay|nbu\.paisa/;
+  function cleanMerchant(raw) {
+    let s = raw.replace(/\s+/g, ' ').trim();
+    s = s.replace(/^(paypal|pp|sq|tst|sp|fs|google|goog|msft|amzn)\s*\*\s*/i, '');
+    s = s.split(',')[0].replace(/\.(com|net|io|ai|ae|co|app|tv)\b.*$/i, '').replace(/[*#]+/g, ' ').replace(/\s+\d{3,}.*$/, '').replace(/\s+/g, ' ').trim();
+    return s;
+  }
+  const titleCase = s => s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase());
+
+  /** One bank / wallet notification -> one charge event (or null). */
+  function alertEvent(a) {
+    const title = norm(a.title), text = norm(a.text); const full = (title + ' ' + text).trim();
+    if (!full || RE_AL_SKIP.test(full)) return null;
+    const wallet = WALLETS.test(a.pkg || '');
+    if (RE_AL_NOT.test(full)) return null;
+    if (RE_AL_IN.test(full) && !RE_AL_OUT.test(full)) return null;
+    if (!wallet && !RE_AL_OUT.test(full)) return null;
+    let money = null;
+    for (const f of findMoney(full)) {
+      if (f.amount <= 0) continue;
+      if (/(avl|avail|available|balance|bal|limit|remaining|outstanding|due)\W{0,14}$/i.test(full.slice(Math.max(0, f.idx - 26), f.idx))) continue;
+      money = f; break;
+    }
+    if (!money) return null;
+    let raw = '';
+    const re = /(?:\bat|@|\bto|\btowards)\s+(.+?)(?=\s+(?:on|dated|using|with|via|ref|avl|avail|available|bal|from your|card)\b|\.\s|\.$|;|$)/gi; let m;
+    while ((m = re.exec(full))) { if (/[a-z]{2}/i.test(m[1]) && !/^(your|the|a|card|account|aed|usd)\b/i.test(m[1])) { raw = m[1]; break; } }
+    if (!raw && wallet && title && !/wallet|pay\b/i.test(title)) raw = title;
+    if (!raw) return null;
+    const s = byText(raw); const clean = cleanMerchant(raw);
+    if (!s && clean.length < 2) return null;
+    return {
+      id: 'a:' + a.t + ':' + slug(clean) + Math.round(money.amount * 100), src: 'alert', kind: 'charge', date: a.t,
+      key: s ? s.k : 'b:' + slug(clean), name: s ? s.n : titleCase(clean), cat: s ? s.c : 'Other', known: !!s, via: '', multi: !!(s && s.multi), weak: !s,
+      amount: money.amount, cur: money.cur, per: null, next: null, sub: full.slice(0, 110)
+    };
+  }
+
+  /* ---------- putting it together ---------- */
+  const near = (a, b, tol) => Math.abs(a - b) <= Math.max(Math.abs(a), Math.abs(b)) * tol + 0.011;
+
+  /** For senders we don't know: is it the same amount at a steady rhythm? */
+  function steady(charges) {
+    let best = [];
+    for (const c of charges) {
+      const cl = charges.filter(x => x.cur === c.cur && near(x.amount, c.amount, 0.03));
+      if (cl.length > best.length) best = cl;
+    }
+    if (best.length < 2) return null;
+    const dates = best.map(c => c.date); const per = inferPeriod(dates); if (!per) return null;
+    let ok = 0; for (let i = 1; i < dates.length; i++) { const g = (dates[i] - dates[i - 1]) / DAY, p = PER_DAYS[per]; if (Math.abs(g - p) <= Math.max(3, p * 0.15)) ok++; }
+    if (ok < (dates.length - 1) * 0.75) return null;
+    return { per, charges: best, level: best.length >= 3 ? 'medium' : 'low' };
+  }
+
+  function buildSubs(events, now, hidden) {
+    hidden = hidden || {};
+    const groups = new Map();
+    for (const e of events) {
+      const key = e.multi && e.amount != null ? e.key + '@' + e.cur + Math.round(e.amount) : e.key;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(e);
+    }
+    const subs = [];
+    for (const [key, list] of groups) {
+      const evs = list.slice().sort((a, b) => a.date - b.date);
+      // one charge can show up as a receipt, an invoice and a bank alert: fold them together
+      let charges = [];
+      for (const e of evs) {
+        if (e.kind !== 'charge' || e.amount == null) continue;
+        const aed = toAED(e.amount, e.cur);
+        const dup = charges.find(c => Math.abs(c.date - e.date) <= 4 * DAY && near(c.aed, aed, c.cur === e.cur ? 0.02 : 0.08));
+        if (dup) {
+          dup.src[e.src] = 1;
+          if (e.src === 'alert' && e.cur === 'AED') dup.paid = e.amount;
+          if (e.src === 'mail' && dup.first !== 'mail') { if (dup.cur === 'AED') dup.paid = dup.amount; dup.amount = e.amount; dup.cur = e.cur; dup.first = 'mail'; dup.aed = aed; }
+        } else charges.push({ date: e.date, amount: e.amount, cur: e.cur, aed, src: { [e.src]: 1 }, first: e.src, paid: e.src === 'alert' && e.cur === 'AED' ? e.amount : null });
+      }
+      const allWeak = evs.every(e => e.weak);
+      let conf = evs.some(e => e.known) ? 'high' : 'medium'; let per = null, perGuess = false;
+      if (allWeak) {
+        const st = steady(charges); if (!st) continue;
+        charges = st.charges; per = st.per; conf = st.level;
+      }
+      if (!evs.some(e => e.known) && !evs.some(e => e.amount != null)) continue;
+
+      let status = 'active';
+      for (const e of evs) {
+        if (e.kind === 'charge') status = 'active';
+        else if (e.kind === 'trial') status = 'trial';
+        else if (e.kind === 'cancel') status = 'cancelled';
+        else if (e.kind === 'failed') status = 'failed';
+        else if (e.kind === 'upcoming' && status !== 'trial') status = 'active';
+      }
+      if (allWeak) status = 'active';
+
+      if (!per) { const hints = evs.filter(e => e.per).slice(-3).map(e => e.per); per = hints.length ? hints[hints.length - 1] : inferPeriod(charges.map(c => c.date)); }
+      if (!per) { per = 'month'; perGuess = true; }
+
+      const lastCharge = charges.length ? charges[charges.length - 1] : null;
+      const lastEv = evs[evs.length - 1];
+      const priced = lastCharge || evs.slice().reverse().find(e => e.amount != null) || null;
+      const amount = priced ? priced.amount : null, cur = priced ? priced.cur : null;
+      const paid = lastCharge && lastCharge.paid != null ? lastCharge.paid : null;
+      const aedEach = amount == null ? null : paid != null ? paid : toAED(amount, cur);
+      const lastSeen = lastCharge ? lastCharge.date : lastEv.date;
+
+      let next = null;
+      const hinted = evs.slice().reverse().find(e => e.next && e.next > e.date - DAY);
+      if (hinted && hinted.next >= now - DAY && hinted.date >= lastSeen - 3 * DAY) next = hinted.next;
+      if ((status === 'active' || status === 'failed') && !next) {
+        const grace = Math.max(12, PER_DAYS[per] * 0.35) * DAY;
+        if (now - lastSeen > PER_DAYS[per] * DAY + grace) status = 'lapsed';
+        else if (lastCharge) { next = addPeriod(lastCharge.date, per); let n = 0; while (next < now - DAY && n++ < 60) next = addPeriod(next, per); }
+      }
+      if (status === 'trial' && next && next < now - 2 * DAY) { status = 'lapsed'; next = null; }
+      if (status === 'cancelled' || status === 'lapsed') next = null;
+
+      const src = {}; evs.forEach(e => { src[e.src] = 1; });
+      const named = evs.slice().reverse().find(e => e.src === 'mail') || lastEv;
+      subs.push({
+        key, name: named.name, cat: named.cat, via: named.via || '', status, conf, hidden: !!hidden[key],
+        amount, cur, per, perGuess, next, last: lastSeen, since: evs[0].date,
+        monthlyAED: aedEach == null ? null : aedEach * PER_MONTHLY[per], approx: cur != null && cur !== 'AED' && paid == null,
+        charges: charges.slice(-12).reverse().map(c => ({ date: c.date, amount: c.amount, cur: c.cur, paid: c.paid, src: Object.keys(c.src) })),
+        notes: evs.slice(-6).reverse().map(e => ({ date: e.date, kind: e.kind, sub: e.sub, src: e.src })),
+        src: Object.keys(src), cancelledOn: status === 'cancelled' ? lastEv.date : null
+      });
+    }
+    const rank = { failed: 0, trial: 1, active: 2, lapsed: 3, cancelled: 4 };
+    subs.sort((a, b) => (rank[a.status] - rank[b.status]) || ((b.monthlyAED || 0) - (a.monthlyAED || 0)) || a.name.localeCompare(b.name));
+    return subs;
+  }
+
+  function totals(subs) {
+    const live = subs.filter(s => !s.hidden && s.conf !== 'low' && (s.status === 'active' || s.status === 'failed'));
+    const monthly = live.reduce((t, s) => t + (s.monthlyAED || 0), 0);
+    const upcoming = subs.filter(s => !s.hidden && s.next && (s.status === 'active' || s.status === 'trial' || s.status === 'failed')).sort((a, b) => a.next - b.next)[0] || null;
+    return { monthly, yearly: monthly * 12, count: live.length, approx: live.some(s => s.approx), upcoming };
+  }
+
+  /* ---------- sample data (for the "Try it" button and for tests) ---------- */
+  function demo(now) {
+    const mails = [], alerts = []; let u = 1;
+    const ago = d => now - d * DAY;
+    const mail = (d, f, s, text) => mails.push({ u: u++, f, s, d: ago(d), text: text || '' });
+    const sms = (d, title, text, pkg) => alerts.push({ t: ago(d) + 3600000, pkg: pkg || 'com.samsung.android.messaging', title, text });
+    const dstr = t => { const x = new Date(t); return x.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][x.getMonth()] + ' ' + x.getFullYear(); };
+    for (let i = 0; i < 6; i++) {
+      const d = 9 + i * 30.4;
+      mail(d, 'Netflix <info@account.netflix.com>', 'Your Netflix payment receipt', 'Thanks for staying with us.\nPlan\tStandard\nTotal\tAED 39.00\nBilled monthly. Next billing date: ' + dstr(addPeriod(ago(d), 'month')));
+      sms(d, 'ADCB', 'Your Cr.Card XXX4417 was used for AED39.00 on ' + dstr(ago(d)) + ' at NETFLIX.COM,LOS GATOS-US. Avl Cr.Limit is AED12,450.75');
+    }
+    for (let i = 0; i < 5; i++) {
+      const d = 14 + i * 30.4;
+      mail(d, 'Google Play <googleplay-noreply@google.com>', 'Your Google Play Order Receipt from ' + dstr(ago(d)), 'Thank you.\nYour subscription from Spotify AB on Google Play has been renewed.\nOrder number: GPA.3391-5521-8842-' + (10000 + i) + '\nItem\tPrice\nPremium Individual (Spotify: Music and Podcasts)\tAED 23.99/month\nAuto-renewing subscription\nTotal: AED 23.99/month\nPayment method: Visa-4417');
+    }
+    for (let i = 0; i < 4; i++) sms(3 + i * 30.4, 'ENBD', 'Purchase of AED 26.99 with Credit Card ending 4417 at GOOGLE *YouTubePremium, g.co/helppay. Avl Cr limit is AED 9,120.00');
+    for (let i = 0; i < 4; i++) {
+      const d = 20 + i * 30.4;
+      mail(d, 'Anthropic, PBC <receipts+acct_1x@stripe.com>', 'Your receipt from Anthropic, PBC #2231-' + (4410 + i), 'Receipt from Anthropic, PBC\nAmount paid\t$20.00\nClaude Pro\tQty 1\t$20.00\nMonthly subscription');
+      sms(d, 'ADCB', 'Your Cr.Card XXX4417 was used for AED75.63 on ' + dstr(ago(d)) + ' at CLAUDE.AI SUBSCRIPTION,SAN FRANCISCO-US. Avl Cr.Limit is AED11,980.10');
+    }
+    mail(64, 'ElevenLabs <billing@elevenlabs.io>', 'Your ElevenLabs invoice', 'Starter plan, billed monthly\nTotal: $5.00');
+    mail(34, 'ElevenLabs <billing@elevenlabs.io>', 'Your ElevenLabs invoice', 'Starter plan, billed monthly\nTotal: $5.00');
+    mail(3, 'ElevenLabs <billing@elevenlabs.io>', 'Your payment failed', 'We were unable to charge your card for your Starter subscription ($5.00). Please update your payment method.');
+    mail(245, 'Canva <no-reply@canva.com>', 'Your Canva Pro receipt', 'Canva Pro, annual plan\nTotal\tAED 349.99\nYour plan renews on ' + dstr(ago(245 - 365)) + '.');
+    mail(5, 'Disney+ <disneyplus@mail.disneyplus.com>', 'Your free trial has started', 'Welcome to Disney+. Your free trial ends on ' + dstr(ago(-9)) + '. After that you will be charged AED 29.99/month unless you cancel.');
+    mail(160, 'OSN+ <hello@osnplus.com>', 'Payment confirmation', 'Your OSN+ monthly subscription\nTotal AED 35.00');
+    mail(130, 'OSN+ <hello@osnplus.com>', 'Payment confirmation', 'Your OSN+ monthly subscription\nTotal AED 35.00');
+    mail(112, 'OSN+ <hello@osnplus.com>', 'Your subscription has been cancelled', 'We are sorry to see you go. Your OSN+ subscription has been cancelled.');
+    for (let i = 0; i < 3; i++) sms(11 + i * 30.4, 'FAB', 'Dear Customer, Your Credit Card ending with 9920 was used for AED 199.00 at FITZONE GYM ABU DHABI on ' + dstr(ago(11 + i * 30.4)) + '. Available limit AED 4,300.00');
+    for (let i = 0; i < 5; i++) sms(6 + i * 30.4, 'ADCB', 'Your Cr.Card XXX4417 was used for AED3.69 on ' + dstr(ago(6 + i * 30.4)) + ' at APPLE.COM/BILL,ITUNES.COM-IE. Avl Cr.Limit is AED12,100.00');
+    for (let i = 0; i < 3; i++) sms(17 + i * 30.4, 'ADCB', 'Your Cr.Card XXX4417 was used for AED215.25 on ' + dstr(ago(17 + i * 30.4)) + ' at DU - EMIRATES INTEGRATED,DUBAI-AE. Avl Cr.Limit is AED10,700.00');
+    // noise that must be ignored
+    [[2, 84.5], [9, 212.3], [16, 47.25], [23, 130], [31, 96.75]].forEach(x => sms(x[0], 'ADCB', 'Your Cr.Card XXX4417 was used for AED' + x[1].toFixed(2) + ' on ' + dstr(ago(x[0])) + ' at CARREFOUR HYPERMARKET,ABU DHABI-AE. Avl Cr.Limit is AED11,000.00'));
+    sms(4, 'ADCB', 'AED 2,000.00 withdrawn from ATM using your card XXX4417 on ' + dstr(ago(4)) + '. Avl Bal AED 8,112.40');
+    sms(1, 'ADCB', 'Your OTP for the purchase of AED 39.00 at NETFLIX.COM is 482913. Do not share it with anyone.');
+    sms(26, 'FAB', 'Your salary of AED 9,500.00 has been credited to your account.');
+    mail(7, 'noon <orders@noon.com>', 'Your order has been delivered', 'Order total AED 129.00');
+    mail(12, 'Spotify <no-reply@spotify.com>', 'Get 3 months of Premium free', 'Limited-time offer. Then AED 23.99/month.');
+    mail(18, 'Amazon.ae <auto-confirm@amazon.ae>', 'Your Amazon.ae order of "USB-C cable"', 'Order Total: AED 35.00');
+    mail(40, 'Google <no-reply@accounts.google.com>', 'Security alert', 'A new sign-in on Galaxy S24 Ultra');
+    return { mails, alerts };
+  }
+
+  return { findMoney, pickAmount, findDate, nextHint, periodHint, inferPeriod, addPeriod, identify, classify, triage, mailEvent, alertEvent, buildSubs, totals, demo, toAED, PER_MONTHLY, SERVICES, DAY };
+})();
+
+</script>
+<script>
+(() => {
+'use strict';
+const NATIVE = window.SubNative || null;
+const KEY = 'subscout.v1';
+const CREDIT = 'Copyright © 2026 Zenix_dev@company. All rights reserved. Developed by JPSums';
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const I = {
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9.5 8.5h5M9.5 12.5h5"/></svg>',
+  plug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7.5l8.5 6 8.5-6"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19M6.5 14.5h4"/></svg>',
+  scan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4"/></svg>',
+  chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3zM12 10v4.5M12 17.5v.1"/></svg>',
+  radar: '<svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="60" cy="60" r="52" stroke-width="2" opacity=".25"/><circle cx="60" cy="60" r="35" stroke-width="2" opacity=".4"/><circle cx="60" cy="60" r="18" stroke-width="2" opacity=".6"/><path d="M60 60L97 23" stroke-width="3.5"/><circle cx="60" cy="60" r="5" fill="currentColor" stroke="none"/><circle cx="84" cy="74" r="4" fill="currentColor" stroke="none" opacity=".7"/><circle cx="38" cy="44" r="3" fill="currentColor" stroke="none" opacity=".5"/></svg>'
+};
+
+/* ---------- saved data ---------- */
+const EV = 1;            // raise this when detection changes, so emails already read get read again
+const BATCH = 350;       // most emails opened in one scan
+let state = { events: [], hidden: {}, months: 12, lastScan: 0, demo: false, stats: null, seen: {}, ev: EV };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && typeof s === 'object') state = Object.assign(state, s); } catch (e) { }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { } };
+let subs = [], tab = 'home', scanning = null, sheetKey = null, formErr = '', adding = false, showOther = false;
+const form = { email: '', pass: '', host: '' };
+const rebuild = () => { subs = Engine.buildSubs(state.events, Date.now(), state.hidden); };
+
+function info() {
+  if (NATIVE) { try { return JSON.parse(NATIVE.info()); } catch (e) { } }
+  return { version: 'web', notif: false, alerts: 0, alertsSince: 0, accounts: [] };
+}
+
+/* ---------- talking to the Android side ---------- */
+let seq = 0; const pending = {};
+window.SSNative = (ev, id, msg) => {
+  if (ev === 'resume') { if (!scanning) render(); return; }
+  const p = pending[id]; if (!p) return;
+  if (ev === 'progress') { if (p.onProgress) p.onProgress(msg); return; }
+  delete pending[id];
+  if (ev === 'done') { let v = null; try { v = JSON.parse(NATIVE.take(id)); } catch (e) { } p.resolve(v); }
+  else p.reject(new Error(msg || 'Something went wrong.'));
+};
+window.SSBack = () => { if (sheetKey) { closeSheet(); return true; } if (tab !== 'home') { go('home'); return true; } return false; };
+function call(method, args, onProgress) {
+  return new Promise((resolve, reject) => {
+    const id = 'r' + (++seq); pending[id] = { resolve, reject, onProgress };
+    try { NATIVE[method](id, ...args); } catch (e) { delete pending[id]; reject(e); }
+  });
+}
+
+/* ---------- formatting ---------- */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const money = (a, cur) => a == null ? '–' : (cur || 'AED') + ' ' + a.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dShort = t => { const d = new Date(t); return d.getDate() + ' ' + MONTHS[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''); };
+const dayDiff = t => Math.round((new Date(t).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000);
+const rel = t => { const n = dayDiff(t); return n === 0 ? 'today' : n === 1 ? 'tomorrow' : n === -1 ? 'yesterday' : n > 0 ? 'in ' + n + ' days' : -n + ' days ago'; };
+const PER = { week: 'Weekly', month: 'Monthly', quarter: 'Every 3 months', half: 'Every 6 months', year: 'Yearly' };
+const PER_SHORT = { week: '/wk', month: '/mo', quarter: '/3 mo', half: '/6 mo', year: '/yr' };
+const hue = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+const ava = s => '<span class="ava" style="--h:' + hue(s.name) + '">' + esc((s.name.match(/[A-Za-z0-9]/) || ['?'])[0].toUpperCase()) + '</span>';
+const srcIcons = s => (s.src.includes('mail') ? I.mail : '') + (s.src.includes('alert') ? I.bell : '');
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 3400); }
+
+/* ---------- Home ---------- */
+function rowHtml(s) {
+  let meta, cls = '';
+  if (s.status === 'failed') { meta = 'Payment problem'; cls = 'bad'; }
+  else if (s.status === 'trial') { meta = s.next ? 'Free trial · ends ' + dShort(s.next) + ' (' + rel(s.next) + ')' : 'Free trial'; cls = 'warn'; }
+  else if (s.status === 'cancelled') meta = 'Cancelled ' + dShort(s.cancelledOn || s.last);
+  else if (s.status === 'lapsed') meta = 'No charge seen since ' + dShort(s.last);
+  else meta = PER[s.per] + (s.next ? ' · next ' + dShort(s.next) + (dayDiff(s.next) <= 7 ? ' (' + rel(s.next) + ')' : '') : '');
+  const sub = s.cur && s.cur !== 'AED' && s.monthlyAED != null ? (s.approx ? '≈ ' : '') + 'AED ' + s.monthlyAED.toFixed(2) + '/mo' : (s.per !== 'month' && s.monthlyAED != null ? 'AED ' + s.monthlyAED.toFixed(2) + '/mo' : '');
+  return '<button class="row" data-act="open" data-key="' + esc(s.key) + '">' + ava(s) +
+    '<span class="r-main"><span class="r-name">' + esc(s.name) + '</span><span class="r-meta ' + cls + '">' + esc(meta) + '</span></span>' +
+    '<span class="r-amt"><b>' + (s.amount == null ? '–' : esc(money(s.amount, s.cur)) + (s.status === 'trial' ? '' : '')) + '</b><small>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + srcIcons(s) + '</small></span></button>';
+}
+const block = (title, items, cls, hint) => !items.length ? '' :
+  '<div class="sec ' + (cls || '') + '"><h2>' + title + '</h2><span>' + items.length + '</span></div>' + (hint ? '<p class="hint">' + hint + '</p>' : '') + '<div class="list">' + items.map(rowHtml).join('') + '</div>';
+
+function renderHome() {
+  const el = $('#p-home'); const inf = info();
+  const shown = subs.filter(s => !s.hidden);
+  let h = '';
+  if (scanning) h += '<div class="progress"><p>' + esc(scanning.label) + '</p><div class="bar"><i style="width:' + Math.round(scanning.pct) + '%"></i></div></div>';
+  if (!shown.length) {
+    const hasMail = inf.accounts.length > 0;
+    h += '<div class="empty"><div class="radar">' + I.radar + '</div><h2>' + (state.lastScan ? 'Nothing found yet' : 'Find what you’re paying for') + '</h2><p>' +
+      (state.lastScan ? 'No subscriptions turned up in the last scan. Add another source or scan further back in Settings.' : 'SubScout reads your receipts and card-charge alerts, then lists every subscription with its price and next charge.') + '</p>' +
+      '<div class="steps">' +
+      '<button class="step ' + (hasMail ? 'done' : '') + '" data-act="go" data-tab="sources"><span class="n">' + (hasMail ? I.check : '1') + '</span><span><b>Connect your email</b><small>' + (hasMail ? esc(inf.accounts.map(a => a.email).join(', ')) : 'Receipts, renewals and trial emails') + '</small></span><span class="go">' + I.chev + '</span></button>' +
+      '<button class="step ' + (inf.notif ? 'done' : '') + '" data-act="go" data-tab="sources"><span class="n">' + (inf.notif ? I.check : '2') + '</span><span><b>Turn on bank alerts</b><small>' + (inf.notif ? inf.alerts + ' card charges saved so far' : 'Catches charges that never send an email') + '</small></span><span class="go">' + I.chev + '</span></button>' +
+      '<button class="step" data-act="scan"><span class="n">3</span><span><b>Scan</b><small>Takes a minute or two the first time</small></span><span class="go">' + I.chev + '</span></button>' +
+      '</div><button class="btn ghost wide" data-act="demo" style="margin-top:14px">See it with sample data</button></div>';
+    el.innerHTML = h + foot(); return;
+  }
+  const t = Engine.totals(subs);
+  const whole = Math.floor(t.monthly), dec = (t.monthly - whole).toFixed(2).slice(1);
+  h += '<section class="receipt"><div class="r-label">You’re paying about</div>' +
+    '<div class="r-total"><span class="cur">AED</span>' + whole.toLocaleString('en-US') + '<span class="dec">' + dec + '</span><span class="per">a month</span></div>' +
+    '<div class="r-rule"></div>' +
+    '<div class="r-row"><span>Per year</span><b>AED ' + Math.round(t.yearly).toLocaleString('en-US') + '</b></div>' +
+    '<div class="r-row"><span>Active subscriptions</span><b>' + t.count + '</b></div>' +
+    (t.upcoming ? '<div class="r-row"><span>' + (t.upcoming.status === 'trial' ? 'Trial ends' : 'Next charge') + '</span><b>' + esc(t.upcoming.name) + ' · ' + rel(t.upcoming.next) + '</b></div>' : '') +
+    (t.approx ? '<p class="r-note">≈ Some prices are in another currency and converted to AED at a rough rate.</p>' : '') + '</section>';
+  if (state.demo) h += '<div class="banner"><span><b>Sample data.</b> None of this is yours.</span><span class="sp"></span><button data-act="clear-demo">Clear</button></div>';
+  h += '<div class="scanbar"><button class="btn" data-act="scan"' + (scanning ? ' disabled' : '') + '>' + I.scan + (scanning ? 'Scanning…' : 'Scan now') + '</button><span class="when">' +
+    (state.demo ? 'Scan to replace the samples with your own.' : state.lastScan ? 'Last scan ' + rel(state.lastScan) + (state.stats ? '<br>' + (state.stats.more ? state.stats.more + ' emails still to read, scan again' : state.stats.mails + ' emails · ' + state.stats.alerts + ' bank alerts') : '') : '') + '</span></div>';
+  const sure = shown.filter(s => s.conf !== 'low');
+  h += block('Needs attention', sure.filter(s => s.status === 'failed'), 'bad');
+  h += block('Free trials', sure.filter(s => s.status === 'trial'));
+  h += block('Active', sure.filter(s => s.status === 'active'));
+  h += block('Possible', shown.filter(s => s.conf === 'low' && s.status === 'active'), '', 'The same amount was charged twice. Open one to check it.');
+  const ended = shown.filter(s => s.status === 'cancelled' || s.status === 'lapsed');
+  if (ended.length) h += '<details class="ended"><summary>' + I.chev + 'Ended or stopped · ' + ended.length + '</summary><div class="list">' + ended.map(rowHtml).join('') + '</div></details>';
+  el.innerHTML = h + foot();
+}
+const foot = () => '<footer>' + esc(CREDIT) + '</footer>';
+
+/* ---------- Sources ---------- */
+function renderSources() {
+  const inf = info(); let h = '<h1 class="ptitle">Sources</h1><p class="psub">Where SubScout looks for subscriptions.</p>';
+  // email
+  h += '<div class="card"><h3>' + I.mail + 'Email<span class="state ' + (inf.accounts.length ? 'on' : '') + '">' + (inf.accounts.length ? inf.accounts.length + ' connected' : 'Not connected') + '</span></h3>';
+  if (!NATIVE) h += '<p>Reading your inbox works in the Android app. Here in the browser you can try the sample data.</p>';
+  else {
+    h += inf.accounts.map(a => '<div class="acct"><span>' + esc(a.email) + '</span><button data-act="rm-acct" data-id="' + esc(a.id) + '">Remove</button></div>').join('');
+    h += '<p style="margin-top:14px"><b>Add a Gmail account</b></p><ol>' +
+      '<li>Tap <b>Open Google app passwords</b> below and sign in. If Google says app passwords aren’t available, turn on <b>2-Step Verification</b> in your Google Account first.</li>' +
+      '<li>Type <b>SubScout</b> as the name and tap <b>Create</b>.</li>' +
+      '<li>Copy the <b>16-letter password</b> Google shows and paste it here.</li></ol>' +
+      '<button class="btn line wide" data-act="open-url" data-url="https://myaccount.google.com/apppasswords">Open Google app passwords</button>' +
+      '<label class="f">Email address<input id="f-email" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="you@gmail.com" value="' + esc(form.email) + '"></label>' +
+      '<label class="f">App password (16 letters)<input id="f-pass" class="mono" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="abcd efgh ijkl mnop" value="' + esc(form.pass) + '"></label>' +
+      '<details class="more"' + (showOther ? ' open' : '') + '><summary data-act="other">Not Gmail? (Yahoo, iCloud, others)</summary>' +
+      '<p style="margin-top:0">Use an app password from that provider. Leave the server empty and SubScout will work it out, or type it, for example <b>imap.mail.yahoo.com</b>. Outlook and Hotmail are not supported yet.</p>' +
+      '<label class="f">Mail server (optional)<input id="f-host" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="imap.example.com" value="' + esc(form.host) + '"></label></details>' +
+      (formErr ? '<p class="err">' + esc(formErr) + '</p>' : '') +
+      '<button class="btn wide" data-act="add-acct"' + (adding ? ' disabled' : '') + '>' + (adding ? 'Checking…' : 'Connect') + '</button>' +
+      '<p>SubScout only reads. It never deletes, sends or marks emails as read. The app password is stored encrypted on this phone and you can delete it in your Google Account any time.</p>';
+  }
+  h += '</div>';
+  // bank alerts
+  h += '<div class="card"><h3>' + I.bell + 'Bank alerts<span class="state ' + (inf.notif ? 'on' : '') + '">' + (inf.notif ? 'On' : 'Off') + '</span></h3>';
+  if (!NATIVE) h += '<p>Card-charge alerts are picked up by the Android app.</p>';
+  else if (inf.notif) h += '<p><b>' + inf.alerts + ' card ' + (inf.alerts === 1 ? 'charge' : 'charges') + ' saved</b>' + (inf.alertsSince ? ' since ' + dShort(inf.alertsSince) : '') + '. SubScout notes each card-charge alert as it arrives, from your bank’s SMS and from Google or Samsung Wallet. A charge that repeats shows up as a subscription after its second month.</p>' +
+    '<button class="btn line wide" data-act="notif">Notification access settings</button>';
+  else h += '<p>Your bank texts you for every card charge. With notification access on, SubScout keeps the ones that look like a card charge and spots the charges that repeat. It starts from today; your email scan covers the months before.</p>' +
+    '<button class="btn wide" data-act="notif">Turn on</button>' +
+    '<details class="more"><summary>The switch is greyed out?</summary><ol><li>Tap <b>Open app settings</b> below.</li><li>Tap <b>⋮</b> at the top right, then <b>Allow restricted settings</b>.</li><li>Come back and tap <b>Turn on</b> again.</li></ol><button class="btn line wide" data-act="app-settings">Open app settings</button></details>' +
+    '<p>Everything stays on this phone. Chat apps and one-time codes are ignored.</p>';
+  h += '</div>';
+  h += '<div class="card"><h3>' + I.list + 'Sample data</h3><p>See how the list looks with made-up subscriptions. Your next real scan replaces them.</p><button class="btn ghost wide" data-act="demo">Load sample data</button></div>';
+  $('#p-sources').innerHTML = h + foot();
+}
+
+/* ---------- Settings ---------- */
+function renderSettings() {
+  const inf = info(); const nHidden = Object.keys(state.hidden).length;
+  let h = '<h1 class="ptitle">Settings</h1>';
+  h += '<div class="card"><h3>How far back to scan</h3><p>Longer finds yearly subscriptions, but takes more time.</p><div class="seg">' +
+    [6, 12, 24].map(m => '<button data-act="months" data-m="' + m + '" class="' + (state.months === m ? 'on' : '') + '">' + m + ' months</button>').join('') + '</div></div>';
+  h += '<div class="card"><h3>Hidden items</h3><p>' + (nHidden ? '<b>' + nHidden + '</b> marked as not a subscription.' : 'Nothing hidden. Open any item and tap “Not a subscription” to hide it.') + '</p>' +
+    (nHidden ? '<button class="btn ghost wide" data-act="unhide">Show them again</button>' : '') + '</div>';
+  h += '<div class="card"><h3>Your data</h3><p>Everything SubScout finds is kept on this phone only. Nothing is uploaded. The only connection it makes is straight to your mail provider to read receipts.</p>' +
+    '<button class="btn danger wide" data-act="wipe">Clear all results</button></div>';
+  h += '<div class="card"><h3>About</h3><p>SubScout ' + esc(inf.version) + '</p></div>';
+  $('#p-settings').innerHTML = h + foot();
+}
+
+/* ---------- detail sheet ---------- */
+function renderSheet() {
+  const s = subs.find(x => x.key === sheetKey); const el = $('#sheet');
+  if (!s) { closeSheet(); return; }
+  const st = { active: ['good', 'Active'], trial: ['warn', 'Free trial'], failed: ['bad', 'Payment problem'], cancelled: ['', 'Cancelled'], lapsed: ['', 'No recent charge'] }[s.status];
+  let h = '<div class="grab"></div><div class="s-head">' + ava(s) + '<div><h2>' + esc(s.name) + '</h2><p>' + esc(s.cat) + (s.via ? ' · billed through ' + esc(s.via) : '') + '</p></div><button class="x" data-act="close" aria-label="Close">' + I.x + '</button></div>';
+  h += '<span class="chip ' + st[0] + '">' + (s.status === 'failed' ? I.warn : '') + st[1] + '</span>' +
+    (s.conf === 'low' ? '<span class="chip warn">Not sure yet</span>' : '') +
+    (s.src.includes('mail') ? '<span class="chip">' + I.mail + 'Email</span>' : '') + (s.src.includes('alert') ? '<span class="chip">' + I.bell + 'Bank alert</span>' : '');
+  const yearly = s.monthlyAED != null ? s.monthlyAED * 12 : null;
+  h += '<div class="grid">' +
+    '<div class="stat"><small>Price</small><b>' + esc(money(s.amount, s.cur)) + '</b><em>' + (s.cur && s.cur !== 'AED' && s.monthlyAED != null ? (s.approx ? '≈ ' : '') + 'AED ' + (s.monthlyAED / Engine.PER_MONTHLY[s.per]).toFixed(2) + (s.approx ? '' : ' on your card') : (s.status === 'trial' ? 'after the trial' : '&nbsp;')) + '</em></div>' +
+    '<div class="stat"><small>Billing</small><b class="t">' + PER[s.per] + '</b><em>' + (s.perGuess ? 'Guessed, only one charge seen' : '&nbsp;') + '</em></div>' +
+    '<div class="stat"><small>' + (s.status === 'trial' ? 'Trial ends' : 'Next charge') + '</small><b class="t">' + (s.next ? dShort(s.next) : '–') + '</b><em>' + (s.next ? rel(s.next) : (s.status === 'cancelled' ? 'Cancelled ' + dShort(s.cancelledOn || s.last) : s.status === 'lapsed' ? 'Last seen ' + dShort(s.last) : '&nbsp;')) + '</em></div>' +
+    '<div class="stat"><small>Per year</small><b>' + (yearly != null ? (s.approx ? '≈ ' : '') + 'AED ' + Math.round(yearly).toLocaleString('en-US') : '–') + '</b><em>' + (s.monthlyAED != null ? 'AED ' + s.monthlyAED.toFixed(2) + ' a month' : '&nbsp;') + '</em></div></div>';
+  if (s.charges.length) h += '<h4>Charges found</h4><div class="hist">' + s.charges.map(c => '<div><time>' + dShort(c.date) + '</time><span>' + (c.paid != null && c.cur !== 'AED' ? 'AED ' + c.paid.toFixed(2) + ' on card' : '') + '</span>' + (c.src.includes('mail') ? I.mail : '') + (c.src.includes('alert') ? I.bell : '') + '<b>' + esc(money(c.amount, c.cur)) + '</b></div>').join('') + '</div>';
+  const notes = s.notes.filter(n => n.src === 'mail');
+  if (notes.length) h += '<h4>Recent emails</h4><div class="hist">' + notes.map(n => '<div><time>' + dShort(n.date) + '</time><span>' + esc(n.sub) + '</span></div>').join('') + '</div>';
+  h += s.hidden ? '<button class="btn ghost wide" data-act="unhide-one">Show in my list again</button>' : '<button class="btn line wide" data-act="hide">Not a subscription</button>';
+  el.innerHTML = h;
+}
+function openSheet(key) { sheetKey = key; renderSheet(); $('#sheet').classList.add('on'); $('#scrim').classList.add('on'); $('#sheet').scrollTop = 0; }
+function closeSheet() { sheetKey = null; $('#sheet').classList.remove('on'); $('#scrim').classList.remove('on'); }
+
+/* ---------- shell ---------- */
+function renderTabs() {
+  $('#tabs').innerHTML = [['home', 'Subscriptions', I.list], ['sources', 'Sources', I.plug], ['settings', 'Settings', I.gear]]
+    .map(t => '<button data-act="go" data-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '">' + t[2] + t[1] + '</button>').join('');
+  $('#topScan').innerHTML = I.scan + (scanning ? 'Scanning…' : 'Scan');
+  $('#topScan').style.display = tab === 'home' ? 'none' : '';
+}
+function render() {
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + tab));
+  renderTabs();
+  if (tab === 'home') renderHome(); else if (tab === 'sources') renderSources(); else renderSettings();
+  if (sheetKey) renderSheet();
+}
+function go(t) { tab = t; formErr = ''; render(); window.scrollTo(0, 0); }
+
+/* ---------- actions ---------- */
+function loadDemo() {
+  const now = Date.now(); const d = Engine.demo(now); const evs = [];
+  const want = new Set(Engine.triage(d.mails));
+  for (const m of d.mails) { const e = Engine.mailEvent(Object.assign({}, m, { text: want.has(m.u) ? m.text : '' }), 'demo'); if (e) evs.push(e); }
+  for (const a of d.alerts) { const e = Engine.alertEvent(a); if (e) evs.push(e); }
+  state.events = evs; state.demo = true; state.lastScan = 0; state.stats = null; save(); rebuild(); go('home');
+  toast('Sample data loaded');
+}
+const setScan = (label, pct) => { scanning = { label, pct }; if (tab === 'home') renderHome(); renderTabs(); };
+async function scan() {
+  if (scanning) return;
+  if (!NATIVE) { toast('Scanning works in the Android app. Try the sample data here.'); return; }
+  const inf = info();
+  if (!inf.accounts.length && !inf.notif) { go('sources'); toast('Connect an email or turn on bank alerts first.'); return; }
+  go('home'); setScan('Starting…', 3);
+  const byId = new Map(); const errors = []; let nMails = 0, nAlerts = 0, more = 0;
+  if (state.ev !== EV || state.demo) { state.seen = {}; state.ev = EV; }
+  const cutoff = Date.now() - state.months * 31 * Engine.DAY;
+  try {
+    for (const acc of inf.accounts) {
+      const mine = state.demo ? [] : state.events.filter(x => x.id.indexOf('m:' + acc.id + ':') === 0);
+      setScan('Looking through ' + acc.email + '…', 6);
+      try {
+        const headers = await call('mailHeaders', [acc.id, state.months]);
+        nMails += headers.length;
+        const seen = new Set(state.seen[acc.id] || []);
+        const fresh = headers.filter(h => !seen.has(h.u));           // emails not read on an earlier scan
+        const wantAll = Engine.triage(fresh); const want = wantAll.slice(0, BATCH); const later = new Set(wantAll.slice(BATCH));
+        more += later.size;
+        setScan('Found ' + headers.length + ' emails. Reading ' + want.length + ' new ones…', 18);
+        let bodies = {};
+        if (want.length) bodies = await call('mailBodies', [acc.id, JSON.stringify(want)], m => { const p = String(m).split('/'); setScan('Reading receipts, ' + p[0] + ' of ' + p[1] + '…', 18 + 72 * (+p[0] / Math.max(1, +p[1]))); });
+        mine.filter(x => x.date >= cutoff).forEach(x => byId.set(x.id, x));
+        for (const h of fresh) { const e = Engine.mailEvent({ u: h.u, f: h.f, s: h.s, d: h.d, text: (bodies && bodies[h.u]) || '' }, acc.id); if (e) byId.set(e.id, e); }
+        state.seen[acc.id] = headers.filter(h => !later.has(h.u)).map(h => h.u);
+      } catch (e) {
+        errors.push(acc.email + ': ' + e.message);
+        mine.forEach(x => byId.set(x.id, x));                        // keep what we had for this inbox
+      }
+    }
+    setScan('Checking bank alerts…', 94);
+    let alerts = []; try { alerts = JSON.parse(NATIVE.alerts()); } catch (e) { }
+    nAlerts = alerts.length;
+    for (const a of alerts) { const e = Engine.alertEvent(a); if (e) byId.set(e.id, e); }
+    state.events = Array.from(byId.values()); state.demo = false; state.lastScan = Date.now(); state.stats = { mails: nMails, alerts: nAlerts, more }; save();
+  } finally { scanning = null; rebuild(); render(); }
+  const n = subs.filter(s => !s.hidden && (s.status === 'active' || s.status === 'trial' || s.status === 'failed')).length;
+  toast(errors.length ? errors[0] : more ? 'Read ' + BATCH + ' emails. Scan again to read ' + more + ' more.' : n ? 'Found ' + n + ' subscription' + (n === 1 ? '' : 's') : 'Scan finished. Nothing found yet.');
+}
+async function addAccount() {
+  if (adding) return;
+  const email = form.email.trim().toLowerCase(), pass = form.pass.replace(/\s+/g, ''), host = form.host.trim().toLowerCase();
+  const fail = m => { formErr = m; renderSources(); };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Type your full email address.');
+  if (/@(outlook|hotmail|live|msn)\./.test(email)) return fail('Outlook and Hotmail are not supported yet.');
+  if (pass.length < 8) return fail('Paste the app password from Google. It is 16 letters, not your normal password.');
+  adding = true; formErr = ''; renderSources();
+  try { await call('addAccount', [JSON.stringify({ email, pass, host })]); adding = false; form.email = form.pass = form.host = ''; renderSources(); toast('Connected. Tap Scan to look for subscriptions.'); }
+  catch (e) { adding = false; fail(e.message); }
+}
+document.addEventListener('input', ev => { const k = { 'f-email': 'email', 'f-pass': 'pass', 'f-host': 'host' }[ev.target.id]; if (k) form[k] = ev.target.value; });
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'go') go(b.dataset.tab);
+  else if (act === 'scan') scan();
+  else if (act === 'demo') loadDemo();
+  else if (act === 'clear-demo') { state.events = []; state.demo = false; save(); rebuild(); render(); }
+  else if (act === 'open') openSheet(b.dataset.key);
+  else if (act === 'close') closeSheet();
+  else if (act === 'hide') { state.hidden[sheetKey] = 1; save(); rebuild(); closeSheet(); render(); toast('Hidden. You can bring it back in Settings.'); }
+  else if (act === 'unhide-one') { delete state.hidden[sheetKey]; save(); rebuild(); render(); }
+  else if (act === 'unhide') { state.hidden = {}; save(); rebuild(); render(); toast('All items are showing again'); }
+  else if (act === 'months') { state.months = +b.dataset.m; save(); renderSettings(); }
+  else if (act === 'wipe') { if (b.dataset.sure) { state.events = []; state.hidden = {}; state.seen = {}; state.demo = false; state.lastScan = 0; state.stats = null; save(); rebuild(); render(); toast('Results cleared'); } else { b.dataset.sure = 1; b.textContent = 'Tap again to clear'; } }
+  else if (act === 'other') { showOther = !showOther; }
+  else if (act === 'add-acct') addAccount();
+  else if (act === 'rm-acct') { if (b.dataset.sure) { try { NATIVE.removeAccount(b.dataset.id); } catch (e) { } state.events = state.events.filter(x => x.id.indexOf('m:' + b.dataset.id + ':') !== 0); delete state.seen[b.dataset.id]; save(); rebuild(); render(); } else { b.dataset.sure = 1; b.textContent = 'Tap again'; } }
+  else if (act === 'notif') { try { NATIVE.openNotifAccess(); } catch (e) { } }
+  else if (act === 'app-settings') { try { NATIVE.openAppSettings(); } catch (e) { } }
+  else if (act === 'open-url') { if (NATIVE) { try { NATIVE.openUrl(b.dataset.url); } catch (e) { } } else window.open(b.dataset.url, '_blank', 'noopener'); }
+});
+
+rebuild(); render();
+})();
+</script>
+</body>
+</html>
